@@ -13,8 +13,6 @@ discovery:
   - matter
 hassio_api: true
 homeassistant: 2024.6.0
-# IPC is only used within the Add-on
-host_ipc: false
 host_network: true
 host_dbus: true
 image: ghcr.io/home-assistant/app-matter-server
@@ -45,5 +43,4 @@ schema:
   matter_server_version: str?
 ports:
   5580/tcp: null
-stage: stable
 startup: services
