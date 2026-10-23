@@ -1,4 +1,4 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/matter-js/matterjs-server:1.4.0
 FROM ${BUILD_FROM}
 
 # The matter.js base image runs as an unprivileged user; the app requires root
@@ -22,13 +22,13 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Build Args
 ARG \
-    BASHIO_VERSION \
-    TEMPIO_VERSION \
-    S6_OVERLAY_VERSION
+    BASHIO_VERSION=0.17.1 \
+    TEMPIO_VERSION=2024.11.2 \
+    S6_OVERLAY_VERSION=3.1.6.2
 
 # Base system
 WORKDIR /usr/src
-ARG BUILD_ARCH
+ARG TARGETARCH
 
 RUN \
     set -x \
@@ -42,17 +42,22 @@ RUN \
         iproute2 \
     && mkdir -p /usr/share/man/man1 \
     \
-    && if [ "${BUILD_ARCH}" = "armv7" ]; then \
-            export S6_ARCH="arm"; \
-        elif [ "${BUILD_ARCH}" = "i386" ]; then \
-            export S6_ARCH="i686"; \
-        elif [ "${BUILD_ARCH}" = "amd64" ]; then \
-            export S6_ARCH="x86_64"; \
-        else \
-            export S6_ARCH="${BUILD_ARCH}"; \
-        fi \
+    && if [ -z "${TARGETARCH}" ]; then \
+        echo "TARGETARCH is not set, please use Docker BuildKit for the build." && exit 1; \
+    fi \
+    && case "${TARGETARCH}" in \
+        amd64) \
+            S6_OVERLAY_ARCH="x86_64" \
+            TEMPIO_ARCH="amd64" \
+            ;; \
+        arm64) \
+            S6_OVERLAY_ARCH="aarch64" \
+            TEMPIO_ARCH="aarch64" \
+            ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH}" && exit 1 ;; \
+    esac \
     \
-    && curl -L -f -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" \
+    && curl -L -f -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_OVERLAY_ARCH}.tar.xz" \
         | tar Jxvf - -C / \
     && curl -L -f -s "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" \
         | tar Jxvf - -C / \
@@ -64,7 +69,7 @@ RUN \
     && mkdir -p /etc/services.d \
     \
     && curl -L -f -s -o /usr/bin/tempio \
-        "https://github.com/home-assistant/tempio/releases/download/${TEMPIO_VERSION}/tempio_${BUILD_ARCH}" \
+        "https://github.com/home-assistant/tempio/releases/download/${TEMPIO_VERSION}/tempio_${TEMPIO_ARCH}" \
     && chmod a+x /usr/bin/tempio \
     \
     && mkdir -p /usr/src/bashio \
@@ -81,3 +86,9 @@ WORKDIR /root
 ENTRYPOINT ["/init"]
 
 COPY rootfs /
+
+LABEL \
+    org.opencontainers.image.title="Home Assistant App: Matter Server" \
+    org.opencontainers.image.description="Matter WebSocket Server for Home Assistant Matter support." \
+    org.opencontainers.image.source="https://github.com/home-assistant/app-matter-server" \
+    org.opencontainers.image.licenses="Apache License 2.0"

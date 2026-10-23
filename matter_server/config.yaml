@@ -1,10 +1,10 @@
 ---
-version: 9.2.0
+version: dev
 breaking_versions: [9.0.0]
 slug: matter_server
 name: Matter Server
 description: Matter WebSocket Server for Home Assistant Matter support.
-url: >-
+url: https://github.com/home-assistant/app-matter-server
   https://github.com/home-assistant/addons/tree/master/matter_server
 arch:
   - aarch64
@@ -17,7 +17,7 @@ homeassistant: 2024.6.0
 host_ipc: false
 host_network: true
 host_dbus: true
-image: homeassistant/{arch}-addon-matter-server
+image: ghcr.io/home-assistant/app-matter-server
 ingress: true
 ingress_port: 5580
 panel_icon: mdi:matter
